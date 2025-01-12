@@ -24,6 +24,7 @@ An interactive, web-based sales performance dashboard built using HTML, JavaScri
 
 ## 📸 Project Screenshot
 
-![Dashboard Screenshot](blob:https://pixlr.com/35bdac31-bb61-4b46-b514-0638d20da2e6)
+![Alt text](![photo-collage png](https://github.com/user-attachments/assets/dce78b27-40a5-4120-9d95-0e675c1b4daf)
+)
 
 
