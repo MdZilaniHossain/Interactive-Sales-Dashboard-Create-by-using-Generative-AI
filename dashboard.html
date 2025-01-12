@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Sales Dashboard</title>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+</head>
+<body>
+    <h1 style="text-align: center;">Interactive Sales Performance Dashboard</h1>
+
+    <div style="text-align: center; margin-bottom: 20px;">
+        <label for="fileInput" style="font-size: 18px;">Upload Sales Data (JSON):</label>
+        <input type="file" id="fileInput" accept="application/json">
+    </div>
+
+    <div id="dashboard">
+        <div id="salesByRegion" style="width: 80%; margin: auto;"></div>
+        <div id="topSalespeople" style="width: 80%; margin: auto;"></div>
+        <div id="categoryDistribution" style="width: 80%; margin: auto;"></div>
+        <div id="monthlySalesTrend" style="width: 80%; margin: auto;"></div>
+        <div id="profitByProduct" style="width: 80%; margin: auto;"></div>
+    </div>
+
+    <script>
+        document.getElementById('fileInput').addEventListener('change', handleFileUpload);
+
+        function handleFileUpload(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const data = JSON.parse(e.target.result);
+                    processSalesData(data);
+                };
+                reader.readAsText(file);
+            }
+        }
+
+        function processSalesData(data) {
+            // Clean and process data
+            const sales = data.map(row => ({
+                Sales_Person: row["Sales Person"],
+                Geo: row.Geo,
+                Product: row.Product,
+                Date: new Date(row.Date),
+                Amount: parseFloat(row.Amount.replace(/[$,]/g, '')),
+                Expenses: parseFloat(row.Expenses.replace(/[$,]/g, '')),
+                Category: row.Category
+            }));
+
+            // Calculate profit
+            sales.forEach(row => row.Profit = row.Amount - row.Expenses);
+
+            // 1. Total Sales by Region
+            const salesByRegion = {};
+            sales.forEach(row => {
+                salesByRegion[row.Geo] = (salesByRegion[row.Geo] || 0) + row.Amount;
+            });
+
+            const regions = Object.keys(salesByRegion);
+            const regionSales = Object.values(salesByRegion);
+
+            Plotly.newPlot('salesByRegion', [{
+                x: regions,
+                y: regionSales,
+                type: 'bar',
+                marker: { color: 'rgb(100, 149, 237)' }
+            }], {
+                title: 'Total Sales by Region',
+                xaxis: { title: 'Region' },
+                yaxis: { title: 'Total Sales ($)' }
+            });
+
+            // 2. Top 5 Salespeople by Total Revenue
+            const salesByPerson = {};
+            sales.forEach(row => {
+                salesByPerson[row.Sales_Person] = (salesByPerson[row.Sales_Person] || 0) + row.Amount;
+            });
+
+            const topSalespeople = Object.entries(salesByPerson)
+                .sort((a, b) => b[1] - a[1])
+                .slice(0, 5);
+
+            Plotly.newPlot('topSalespeople', [{
+                x: topSalespeople.map(item => item[0]),
+                y: topSalespeople.map(item => item[1]),
+                type: 'bar',
+                marker: { color: 'rgb(255, 127, 80)' }
+            }], {
+                title: 'Top 5 Salespeople by Total Revenue',
+                xaxis: { title: 'Salesperson' },
+                yaxis: { title: 'Total Revenue ($)' }
+            });
+
+            // 3. Product Category Distribution
+            const categorySales = {};
+            sales.forEach(row => {
+                categorySales[row.Category] = (categorySales[row.Category] || 0) + row.Amount;
+            });
+
+            Plotly.newPlot('categoryDistribution', [{
+                labels: Object.keys(categorySales),
+                values: Object.values(categorySales),
+                type: 'pie'
+            }], {
+                title: 'Product Category Distribution'
+            });
+
+            // 4. Monthly Sales Trend
+            const monthlySales = {};
+            sales.forEach(row => {
+                const month = row.Date.toISOString().slice(0, 7); // Get year-month
+                monthlySales[month] = (monthlySales[month] || 0) + row.Amount;
+            });
+
+            const months = Object.keys(monthlySales).sort();
+            const monthSales = months.map(month => monthlySales[month]);
+
+            Plotly.newPlot('monthlySalesTrend', [{
+                x: months,
+                y: monthSales,
+                type: 'scatter',
+                mode: 'lines+markers',
+                marker: { color: 'rgb(60, 179, 113)' }
+            }], {
+                title: 'Monthly Sales Trend',
+                xaxis: { title: 'Month' },
+                yaxis: { title: 'Total Sales ($)' }
+            });
+
+            // 5. Profitability by Product
+            const profitByProduct = {};
+            sales.forEach(row => {
+                profitByProduct[row.Product] = (profitByProduct[row.Product] || 0) + row.Profit;
+            });
+
+            const topProducts = Object.entries(profitByProduct)
+                .sort((a, b) => b[1] - a[1])
+                .slice(0, 10);
+
+            Plotly.newPlot('profitByProduct', [{
+                x: topProducts.map(item => item[0]),
+                y: topProducts.map(item => item[1]),
+                type: 'bar',
+                marker: { color: 'rgb(255, 215, 0)' }
+            }], {
+                title: 'Profitability by Product',
+                xaxis: { title: 'Product' },
+                yaxis: { title: 'Profit ($)' }
+            });
+        }
+    </script>
+</body>
+</html>
